@@ -1,0 +1,428 @@
+# Language-Based Security
+
+# Reading
+
+
+- Read: “Language-Based Security” by Dexter Kozen (1999)
+
+* Read: [What is type safety?](http://www.pl-enthusiast.net/2014/08/05/type-safety/) by Michael Hicks
+
+
+
+
+
+
+#### My Cup Runneth Over
+- Chapter 6 of Pfleeger and Pfleeger
+
+#### What is Memory Safety?
+- by Michael Hicks
+- [post](http://www.pl-enthusiast.net/2014/07/21/memory-safety/) 
+
+#### What is Type Safety?
+- by Michael Hicks
+- [post](http://www.pl-enthusiast.net/2014/08/05/type-safety/) 
+
+#### Language-Based Security
+- by Dexter Kozen
+- [article](http://www.cs.cornell.edu/~kozen/papers/lbs.pdf)
+
+#### Exploiting Format String Vulnerabilities 
+- Stanford, 2001
+- [article](http://crypto.stanford.edu/cs155/papers/formatstring-1.2.pdf)
+
+#### A Theory of Type Polymorphism
+- by Robin Milner, 1978
+- “Well typed programs cannot go wrong”
+- [article](http://researchr.org/publication/Milner78poly) 
+
+# Intro
+
+* Threats, Vulnerabilities, Countermeasures
+- Security is about protecting assets according to confidentiality, integrity, availability requirements
+- Security mechanisms realize security requirements
+- Threats are possible violations to security requirements
+- Vulnerabilities 
+
+* What can we do about security?
+- Prevention
+	- eliminate software defects entirely
+- Mitigation
+	- reduce harm from exploitation of unknown defects
+	- defense in depth
+- Detection and recovery
+	- identify and understand an attack and undo damage
+	- make sure to have a back-up
+
+* Secure Software Design
+- Apply best practices in design of a software system
+- Threat modeling: identify possible threats
+- But: no guarantees
+	- forget to check array bounds …
+	- forget to require authentication on a user interface with sensitive data …
+- Depends on discipline of the programmer
+- Can we rule out security bugs altogether?
+
+* Language-Based Security
+- Prevent (a category of) vulnerabilities entirely by building in safety guarantees into the programming language
+- Slogan: “Well-typed programs don’t go wrong”
+- Static analysis (type system) applied by compiler
+- Safe runtime (dynamic languages)
+- Note: does not defend against all threats, just a particular category of typical (security) bugs
+- Read: “Language-Based Security” by Dexter Kozen (1999)
+
+#  Safety Policies
+
+At the very minimum any safety policy for untrusted machine code executing locally should guarantee the following fundamental safety properties:
+
+* Control flow safety
+- The program should never execute a jump or call to a random location but only addresses within its own code segment containing valid instructions. 
+- All calls should be to valid function entry points and all returns to the location from which the function was called.
+
+* Memory safety
+- The program should not access random places in memory but only valid locations in its own static data segment, live system heap memory explicitly allocated to it, and valid stack frames.
+
+* Stack safety
+- For stack-based runtime architectures, the runtime stack should be preserved across function calls. 
+- We interpret this flexibly; minor modifications near the top of the stack are allowed, as is tail recursion elimination.
+
+* How are these properties violated?
+
+* How can we guarantee these properties?
+
+* When is this statement safe
+- a[i] = c
+- a is an array (type safety)
+- i is within bounds of the array a (memory safety)
+- the value of c fits in cells of the array (type safety)
+
+* Who is responsible for ensuring this?
+- programmer discipline: unsafe
+- static analysis: safe
+
+# Summary: Memory-Based Attacks
+
+* Exploiting buffer overflow vulnerability
+- provide specially crafted input to program that
+- overflows a buffer, overwrites data on the stack
+- overwrite return address with address of 
+- shell code that was part of the input
+
+* C makes it easy to write code that is vulnerable to such attacks
+
+* Buffer Overflow
+- examples of strcpy and strncpy
+- hard to get right
+- what properties are violated?
+
+* Format string attack
+- sprintf(buf) : format specifiers in buf may be interpreted
+- printf takes variable number of arguments
+- printf(“%d %x”) reads %d and %x from the caller’s stack frame
+- printf(“%s”) prints bytes pointed to by that stack entry
+
+* Read Overflow
+- to leak secret data
+- example: partially echoing message
+- Heartbeat bug was a read overflow in this style
+
+# Root Cause Analysis
+
+* access of memory outside of boundaries
+- pointer arithmetic
+
+* access of memory after it is freed
+
+* execution of data as code
+- overflowing code to stack, then jump to it
+- function pointers
+
+* Leaky abstractions
+- invariants of data types are not kept / enforced
+
+# Counter Measures
+
+* Stack canaries
+
+* Data execution protection (DEP)
+- don’t execute code on the stack
+
+* Address space layout randomization (ASLR)
+
+* Read: return-oriented programming
+
+# Memory Safety
+
+# Type Safety
+
+* Read: [What is type safety?](http://www.pl-enthusiast.net/2014/08/05/type-safety/) by Michael Hicks
+
+* “Well typed programs cannot go wrong”
+- [A Theory of Type Polymorphism](http://researchr.org/publication/Milner78poly) Robin Milner 
+- Going wrong: syntactically correct, but semantically meaningless
+- operations should be compatible with data to which they are applied
+- Example: `{ char buf[4]; buf[4] = ‘x’ }` goes wrong since it assigns a value outside of the bounds of the buf array
+- type system distinguishes well-typed programs from non-well-typed programs 
+- hierarchy: arbitrary text, syntactically correct (well-formed) programs, well-typed programs
+
+* Type Safe Languages
+
+- C/C++: not type safe; type system does not rule out programs that go wrong, e.g. write beyond end of buffer, which is undefined behavior
+
+- Java/C#: (probably) type safe; verified for models of Java, not for full language; out of bounds array access has semantics, i.e. throw ArrayBoundsException (check?)
+
+- Python/Ruby: type safe; type checks done at run-time, throws exception when encountered (instead of just applying wrong operation); (throwing an exception is not going wrong, but part of the well-behavedness of the language); all well-formed are type correct (since there is no type check) and exceptions are part of the defined behavior of programs
+
+# Static Analysis
+
+
+# Java Security
+
+* Array bounds checking
+- store dimensions of array with data
+- check that array is not accessed out of bounds
+- throw exception on out of bounds exception
+
+* Bytecode verification
+- ensure basic properties of memory, control-flow, and type safety
+
+* Security manager
+- enforce higher-level safety policies such as restricted I/O
+
+# Safe and Fast Languages
+
+* Performance vs Safety
+- enforcing safety policies dynamically has performance penalty
+
+* Typical enforcement of type safety is expensive
+- New languages aiming to provide similar features to C/C++ while remaining type safe
+- Google’s Go
+- Mozilla’ Rust
+- Apple’s Swift
+
+- Cyclone
+- Erlang
+- Java
+- C#
+
+## Rust Language
+
+* Codify and enforce safe patterns using the type system
+
+* The Rust Type System
+- danger arises from aliasing + mutation
+- aliasing hides dependencies
+- mutations causes memory to be freed (dangling pointers)
+
+* Three basic patterns
+- ownership
+- shared references
+- mutable references
+
+* Ownership
+- object is only owned by one entity
+- objects that are not owned can be garbage collected
+- no aliasing
+- borrowing: allow another function to borrow object
+- shared borrow (&T): many can share refence to the same book
+- can only read, not write shared borrows
+- aliasing, but no mutation
+- mutable borrow (&mut T): memory can be changed by borrower
+- can only be borrowed by one
+- mutation, but no aliasing
+
+- take(vec) passes vector to function take
+- cannot be used afterwards
+
+- shared reference: use(&vec): loan out vec to function use
+- copy pointer to vector to function
+- use cannot write to vec?
+
+- mutable references: &mut Vec<int>
+- only one mutable reference; forbid 
+
+- lifetime of a reference
+- while something is borrowed you may not change it
+- escape analysis
+
+* Messaging
+- avoiding data races
+- data races caused by : aliasing + mutation + no ordering
+- channel, spawn, send, recv
+- transfer references between processes
+- Arc<…> type: shared immutable reference
+- locked mutable access &Mutex<…>
+
+* Unsafe
+- unitialized memory
+- interfacing with C code
+- building parallel abstractions like ARC
+- first-class language construct to allow FFI
+- write libraries in Rust
+
+# Reading
+
+* [What is memory safety?](http://www.pl-enthusiast.net/2014/07/21/memory-safety/) by Michael Hicks
+* [What is type safety?](http://www.pl-enthusiast.net/2014/08/05/type-safety/) by Michael Hicks
+
+
+# Future Topics
+
+# Modeling Language-Based Security
+- static semantics: types, type checking
+- dynamic semantics
+- type soundness
+- program verification
+- proof-carrying code
+
+#
+A programming language is memory-safe if it guarantees that
+1. programs can never reference unallocated or de-allocated memory
+hence also : no segmentation faults at runtime
+2. maybe also: program can never reference uninitialised memory
+1. means we could switch off OS access control to memory
+assuming there are no bugs in our execution engine..
+2. means we don’t have to zero out memory before de-allocating it to avoid
+information leaks
+again, assuming there are no bugs in our execution engine…
+
+# 
+Types annotate program elements to assert certain invariant
+properties. Eg
+– this variable will always hold an integer
+– this variable will always refer to an object of class X(or one of its subclasses)
+– this array will never store more than 10 items
+• Type checking verifies the assertions
+• A language is type sound if the assertions are guaranteed to hold at run-time
+• aka type safety or strong typing
+
+
+sayHello will always be called with 1 parameter of type string
+} }
+sayHello will always return a string
+Type information
+
+public class Demo{
+static private string greeting = “Hello “; final static int CONST = 43;
+static void Main (string[] args){
+CONST will always be 43
+foreach (string name in args){ Console.Writeline(sayHello(name));
+public static string sayHello(string name){ return greeting + name;
+}
+
+
+A programming language is type-safe if it can guarantee that programs that pass the type-checker can only manipulate data in ways allowed by their types
+Eg you cannot add booleans, dereference integers, multiply references, …
+For OO languages, also: no “Method not found” errors at runtime
+
+
+ Memory-safe, typed and type sound languages:
+– Java,C#,functionallanguageslikeML,Haskell,Clean,F# – Some – e.g. Java and C# - still have unsafe features
+• Memory-safe, untyped languages:
+– Lisp,Prolog,manyinterpretedlanguages
+• Memory-unsafe, typed, type-unsafe languages – C,C++,Pascal
+• Not type sound; e.g. using pointer arithmetic in C, you can do anything you want and break any assertion made by the type system – breaking type soundness
+
+
+Remaining buffer overflow issues in Java or C#
+Buffer overflows can still exist, namely:
+in native code
+for C#, in code blocks declared as unsafe
+through bugs in the Virtual Machine (VM) implementation, which is typically written in C++….
+through bugs in the implementation of the type checker, or worse, bugs in the type system (unsoundness)
+once we can create type confusion - i.e. two references to the same memory location with different types - all bets are off
+
+
+
+Breaking type safety?
+Type safety is a very fragile property:
+a tiny flaw brings the whole type system down
+•
+Type confusion attack by Drew Dean on Netscape 3.0
+Breaking type safety?
+In the end, objects are just blocks of memory.
+If we can get two pointers of different types to the same block of memory, then all guarantees provided by the type system are gone
+public class A[]{ … }
+The Java execution engine confused the type A[]
+withthetype arrayofA
+Root cause: [ and ] are not allowed in class names,
+i.e. this is another input validation problem….
+
+
+
+
+￼How do we know a type system is sound? (1)
+representation independence (for booleans)
+it does not matter if we represent true as 0 and false as 1 (or FF), or
+vice versa
+ie. if we execute a given program with either representation in the result will be the same
+One could test this, or try to prove it. (how?)
+Similar properties should hold for all datatypes.
+
+
+How do we know type system is sound? (2)
+Prove the equivalence of
+• a typed operational semantics,
+which records and checks type information at runtime
+• an untyped operational semantics,
+which does not for all well-typed programs
+Or, in other words, prove the equivalence of
+• a defensive execution engine, which records and checks type information, and
+• an ‘offensive’ execution engine which does not
+for any program that passes the type checker
+People have formalised the semantics and type system of e.g. Java using theorem provers (Coq, Isabelle/HOL) to then prove such results
+
+
+Other language-based guarantees
+• visibility: public, private, etc
+– e.g. private fields not accessible from outside a class
+• constants/immutability
+– of primitive values
+• inJava: finalinti=5;
+• in C(++) : const int BUF_SIZE = 128;
+Beware: meaning of const get confusing for C(++) pointers and objects! – of objects
+• InJava,forexampleStringobjectsareconstants
+• Scala provides a stronger distinction between mutable and immutable objects
+
+Other notions of safety
+￼• safe arithmetic
+
+– Whathappensifi=i+1;overflows?
+What would be a safe approach? What an unsafe approach?
+– IncheckedmodeinC#,integeroverflowresultsinanexception • thread safety
+– Thebehaviourofaprogramconsistingofseveralthreadscanbe understood as an interleaving of those threads
+
+Ongoing evolution to richer type systems Many ways to enrich type systems further, e.g.
+- distinguishing non-null and possibly-null types public nonNull String hello;
+why?
+- alias control
+improve efficiency
+prevent bugs (namely NullPointerExceptions) - or
+at least catching them earlier, at compile time
+restrict possible interferences between modules due to aliasing - information flow
+e.g. imposing restrictions on the way tainted information flows through an implementation
+More on information flow and alias control in later lectures
+
+
+Abstractions are crucial to reduce complexity
+reducing complexity avoids bugs, and hence security problems
+Abstractions enable/provide security (access control), e.g.
+access to files (bits on the hard disk) by users & processes provided the abstractions are rigorously enforced
+But.. some abstractions may be broken
+stack overflows break the procedure call mechanism
+uninitialised virtual memory may leak information
+timing attacks may reveal the virtual memory abstraction
+
+
+Programming languages & security
+Programming language can help security by
+by making certain security bugs less likely or impossible
+impose some discipline or restrictions on the programmer or
+offer and/or enforce some abstractions to the programmer
+Eg no buffer overflows possible in any decent language
+by offering useful building blocks for security functionality 
+e.g. language support or APIs for access control
+making assurance of the security easier (meta-property) 
+e.g. code review only of public interface
+Ultimately, this may allow security guarantees in the presence of untrusted, possibly malicious, code
+

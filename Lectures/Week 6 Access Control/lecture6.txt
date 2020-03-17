@@ -1,0 +1,412 @@
+# Lecture 6: Information Flow & Access Control
+
+# After Dealing with the Security Bugs
+
+* Lessons from previous lectures
+- use programming interfaces with safety guarantees
+- use a type-safe language that enforces these guarantees
+- validate your input: prevent interpreting user data as code
+
+- All these are intended to avoid security vulnerabilities caused by implementation bugs
+- Or rather: inadequate low-level access control 
+- buffer overflow: enables unauthorized access to memory
+- SQL injection attack: unauthorized access to database
+
+* Next: Consider High-Level Access Control Policy
+- assumption: you do want to give users access to your system
+- but not everyone should have access to everything
+- access control should be designed, rather than an accidental out come of your functional design
+- it should be possible to reason about properties of the policy; can you explain it to a user? to a customer? does the explanation coincide with the implementation?
+
+* Outline
+- …
+
+
+# WebLab Access Control
+
+running example: information flow and access control in WebLab
+
+* Confidentiality
+- assets
+	- text of assignments (before release)
+	- answers to assignments
+	- specification tests
+- security requirements
+	- privacy: grades only accessible to student and instructor
+- threats
+	- unauthorized user has access to confidential data
+	- student program accesses and publishes data
+
+* Integrity
+- assets
+	- course assets: assignments, answers
+	- student assets: submissions, grades
+- threat 
+	- unauthorized user modifies data
+	- student program modifies data
+
+* Availability
+- threat: student programs use all resources of server
+- threat: aselect authentication service (external)
+- threat: web server flooded with requests
+
+* Access to course
+- browsing 
+- enrolled student
+- instructor
+
+* Roles in course
+- manager: manage access control, edit assignments
+- grader
+- reviewer
+- observer
+
+* Other ‘roles’
+- student in course
+- logged in user
+
+* Access to submissions
+- edit 
+- view
+- grade
+
+* Access before exam
+- only instructor can see exam questions
+
+* Access during exam
+- No access to course material during exam
+- No sharing information during exam
+- No access to internet during exam
+- Spatial access control: present in room
+
+* Access control of student programs
+- no access to resources
+- limited CPU cycles (wall clock)
+
+
+# Threats
+
+* Confidentiality vs Integrity
+
+* Threat: Confidentiality Failure
+
+* Threat: Integrity Failure
+- Protecting integrity with controlled access
+- Examples
+	- web site defacement
+	- substitute content on a real web site
+	- original wikis were completely open; no authentication and authorization; relied on community responsibility; soon led to spam and worse; scripted attacks cannot be handled by community oversight, unless there is a large and active community; how does wikipedia handle this?
+- Problem
+	- unauthorized access to changing content on server
+- Countermeasure
+	- requires a policy that determines which users and what processes are authorized to modify or replace things
+	- what are the critical resources
+	- who can access them
+	- in what ways
+
+## Modularity
+
+* Divide process into separate independent subtasks
+- Each module is
+	- single-purpose: performs one function
+	- small: easy to understand structure and content
+	- simple: low complexity; easy to understand purpose and structure
+	- independent: task isolated from other modules
+- Advantages of modular design
+	- maintenance: easy to replace with alternative implementation if interface is well defined
+	- understandable: composition of small components easier to understand than monolith
+	- reuse: components can be reused in other compositions
+	- correctness: easier to verify that module performs its task correctly
+	- test: easier to test small component with well-defined input/output behavior
+
+* Coupling
+- degree to which components depend on other components
+
+* Encapsulation
+- hides a components implementation details
+
+* Information hiding
+- only allow access to component through interface. 
+- Example: access to buffer only through well-defined interface, which is enforced by type system, guarantees memory safety.
+
+* Mutual suspicion
+- don’t trust other components
+- Example: always validate request data from web browser, since that component cannot be trusted, even if we supplied it; client can be tampered with or even replaced. Extend this to all components. (Examples?)
+
+* Confinement / Separation
+- limit a program in what resources it can access
+- Example: execution of programs in LabBack should not access anything but its own memory and just the input files used in tests. 
+- Example: separation of processes in operating system through
+	- physical separation: different processes use different physical objects; example: separate printers for output requiring different levels of security (print exams only on the exam printer); example: separate networks; example: no access to internet during exam, except for weblab server
+	- temporal separation: processes with different security requirements are executed at different times; example: access to exam rules out access to other parts of WebLab
+	- logical separation (access control): users operate as if no other processes exist; program cannot access objects outside its permitted domain 
+	- cryptographic separation: processes conceal data and computations such that they are unintelligble for other processes
+
+* Simplicity
+- simple solutions are easier to understand
+- Quote by Tony Hoare “There are two ways of constructing a software design: One way is to make it so simple that there ar obviously no deficiencies and the other way is to make it so complicated that there are no obvious deficiences.”
+
+# Secure Software Design Principles (Saltzer & Schroeder)
+
+* Background: Security in the Multics Operating System
+- gave rise to Unix (which gave rise to Linux, Mac OS X)
+- Chief security architects for Multics: Jerome Saltzer and Michael Schroeder
+- Documented design principles for Multics
+
+* Least Privilege
+- Each user and each program should operate using the fewest privileges possible 
+- minimize damage from inadvertent or malicious use
+- Example
+- A subject should have access to the smallest number of objects necessary to perform some task
+- Example: 
+	- admin user should not have access to regular objects directly
+
+* Economy of mechanism
+- design of protection system should be small, simple, and straightforward
+- can be carefully analyzed, tested, verified, relied on
+
+* Open design
+- protection mechanism must not depend on the ignorance of hacker
+- mechanism should be public
+- depend on secrecy of few items, such as password table
+- allows many people to inspect it and detect flaws
+
+* Complete mediation
+- every access attempt must be checked
+- direct access requests and attempts to circumvent access-checking
+- should not be possible to circumvent protection mechanism
+
+* Permission based
+- default condition should be denial of access
+- identify items that should be accessible
+- instead of listing items that should not be accessible
+
+* Separation of privilege
+- access to objects should depend on more than one condition
+- example: user authentication + cryptographic key
+- limit access in case of partial breach
+
+* Least common mechanism
+- shared objects provide potential channels for information flow
+- physical or logical separation reduces the risk from sharing
+- “Every shared mechanism (especially one involving shared variables) represents a potential information path between users and must be designed with great care to be sure it does not unintentionally compromise security.”
+- Example
+	- leak in WebDSL: user profiles could be seen by all users, student could write user profile during exam; channel for sharing information
+
+* Ease of use
+- if protection mechanism is easy to use, it is unlikely to be avoided
+- counter example: passwords that require lots of strange characters “d07;oj7MgLz’%v,”
+- better: use a (long) pass phrases consisting of regular words 
+- “cap liz donna demon self,”
+- https://en.wikipedia.org/wiki/Passphrase
+- but make sure they are random enough https://theintercept.com/2015/03/26/passphrases-can-memorize-attackers-cant-guess/
+
+
+# General Access Control
+
+* Access Control Terminology
+- Subject: user, often represented by program running on behalf of user
+- Object: thing on which action can be performed. Examples: files, tables, programs, memory objects, hardware devices, strings, data fields, network connections, etc. Users (and programs representing users) are also objects that can be executed, halted, or assigned privileges.
+- Access mode: controllable action of a subject on an object. Examples: read, write, modify, delete, execute, create, destroy, copy, export, import, etc.
+
+* Separation
+- effective separation will keep unauthorized subjects from unauthorized accesss to objects
+- cross separation for authorized subjects and modes
+
+* Goals of protection
+- Check every access
+	- after revoking access of a subject to an object, a subject previously authorized access, must no longer be able to access the object. 
+	- Implies: no caching of access control checks. 
+	- Or, cache should be guaranteed to be up-to-date. (Cache consistency?)
+	- WebDSL access control checks are performed on each access. (How about repeated checks in same request? Can that be cached?) 
+- Enforce least privilege
+	- subject has access to smallest number of objects necessary to perform some task
+- Verify acceptable usage
+	- access is binary/boolean
+	- but should check that operation is appropriate
+	- by allowing access only through well-defined and enforced interface
+
+* Access control enforced by operating system?
+- separation of processes: access to memory
+- access to system resources such as files
+- but not: fine grained access control 
+- example: web applications
+	- course grained access control: separate web server from database by running in separate processes as separate users
+	- fine grained access control: policy specific to the application for access to data in database, cannot be delegated to the operating system; also: don’t want to make web application subjects, users at the operating system level
+	- access control using database: separation of data for different application in separate databases accessible by different database users; better: separate database (process) for each application 
+
+* Access Control Directory
+- List of objects per user
+	- each user has a file directory, which lists all the files to which that user has access 
+	- objects: files, subjects: users of system
+	- file has unique owner
+	- owner has control over access rights
+	- file directory lists files
+	- modifying the file directory through operating system interface only
+	- rights: read, write, execute
+	- right: owner, gives user the right to grant and revoke access rights
+- Advantages
+	- easy to implement
+	- very fine grained access control
+- Problems
+	- Size of the directory
+		- list for each user has entry for each shared object; 
+		- deletion of object has to be applied to each user directory
+	- Revoking access
+		- A gives access to F to B
+		- A wants to revoke that access
+		- to revoke everyone’s access: search for all occurrences of object in directories of all users
+		- propagation of access rights: B passes access rights to C; A does not know about this and cannot revoke C’s rights
+	- Pseudonyms (Aliases)
+		- A and B have different files named F
+		- want to share it with S
+		- directory for S cannot contain two entries called F
+		- rename to something like A:F and B:F
+		- S may rename F to Q
+		- requests access to F again with different rights
+		- ambiguous access rights!
+	- Analysis
+		- key problem: multiple entries for same file in access table
+		- solution: use unique identifier to identify the file, not the human readable name; inodes in Unix)
+
+* Access Control List
+- one access list per object
+	- entry for each subject with access rights to the object
+- Advantages
+	- default rights for all users; override with specific rights for particular users
+	- no need to have entry for object in each user’s directory
+	- Multics protection classes: user, group, compartment (for separation of executables and group related objects)
+	- session identifies all three classes (John-Team-Project); may only access objects compatible with those protection classes
+	- too restrictive: shared objects need entry for each user, group, and compartment that may use it
+	- wildcards allow abstraction over collection: John-*-*; *-Team-*
+	- Unix file permissions: user-group-world, file belongs to user and group; instead of an entry for each user for each file; cannot give rights only to John, except by creating a joint group
+
+* Privilege List
+- row of the access matrix with access rights for a given subject
+
+* Capabilities
+- ticket or pass
+- a capability is an unforgeable token that gives the possesor certain rights to an object
+- capability: triple of subject, object, right
+- ticket giving permission to a subject to have a certain type of access to an object; e.g. user may write to the printer
+- unforgeable
+	- operating system holds all capabilities for all users
+	- capabilities are encrypted and can be decrypted only by the access control mechanism
+	- if capability includes identity of the owner, it is not transferable
+	- right to transfer or propagate: pass copy of capability to other subjects
+
+
+# Security Methods
+
+- authentication: who is it?
+- authorization: what can they do?
+
+# Authentication
+
+Confirming authenticity
+
+# Authorization
+
+
+## Access Control Models
+
+- mandatory access control
+- discretionary access control (AC list / matrix)
+- role-based access control
+
+General models of access control (P&P Chapter 6)
+- matrix
+- access control list
+- privilege list
+- capability
+
+
+# Access Control Concepts
+
+* Limited Privilege
+- the determination of the minimal accesses necessary but sufficient for the system to function
+- Least Privilege (Saltzer & Schroeder) (P&P Chapter 3)
+- Multiple states of execution (P&P Chapter 6)
+- Not all users are ethical or competent, not all processes function as intended
+- Limit exposure to misbehaving users or malfunctioning processes
+- Limited privilege constrains exposure
+- Limiting privilege is a management concept: analyze users and processes and determine the privileges they require
+
+* Procedure-Oriented Access Control
+- restrict what subjects have acces to an object and what they can do to that object
+- e.g. read vs write access
+- procedure-oriented protection: a procedure that controls access to objects; forms capsule around the object, permitting only certain specified accessess
+- access through a trusted interface
+- example: API for accessing user table: add a user, delete a user, check name of valid user; no other ways to access database; access control checks on addition and deletion operations
+- procedure-oriented protection: implements information hiding
+
+* Role-Based Access Control
+- indirection in assignment of privileges (separation of concerns)
+- associate privileges with groups rather than individuals
+- assign people to groups (roles) to get privileges
+
+# Temporal Access Control
+
+- access does not only depend on the principal, but also on the time
+- examples
+	- edit permission on submission only before the deadline
+	- instructor can see exam questions before the exam, students only during the exam; and perhaps afterwards
+
+# Spatial Access Control
+
+- access only from certain locations
+- authentication also requires spatial autentication; is principal in that location?
+
+
+
+## Policy Languages
+
+## Meta-Access Control: Access to Permissions
+
+- who can set the access control permissions?
+- what are the access control measures on that interface?
+- what mechanisms does that use?
+
+## Access Control in Practice
+
+## Frameworks for Access Control
+
+## Validating Access Control
+
+- when is an access control policy good?
+
+## Object Capability
+
+
+## Access Control Observations
+- access control matrix for objects is not enough
+- many kinds of access 
+- requires fine grained access decisions
+
+- balance between fine grained access control and understandability/oversight/complexity of administration/complexity of verification
+
+- example: remove buttons on yellowgrass issue tags in overview page; convenieint
+
+
+# Information Flow
+
+## Type-Based Information Flow
+
+# Reading
+
+- Pfleeger & Pfleeger
+	- Chapter 3: Secure Software Design Elements
+	- Chapter 4: 
+	- Chapter 6: Countermeasure: General Access Control
+	- Chapter 13: Countermeasure: Access Control
+
+Danny Groenewegen and Eelco Visser. Declarative Access Control for WebDSL: Combining Language Integration and Separation of Concerns. In Daniel Schwabe and Francisco Curbera (editors) International Conference on Web Engineering (ICWE’08), July 2008.
+
+R. Sandhu et. al.
+Role-Based Access Control Models
+IEEE Computer, Vol. 29, No. 2, Feb 1996.
+http://citeseer.ist.psu.edu/sandhu96rolebased.html
+
+Elisa Bertino, Piero Andrea Bonatti and Elena Ferrari
+TRBAC: A temporal role-based access control model
+http://portal.acm.org/citation.cfm?doid=501978.501979
